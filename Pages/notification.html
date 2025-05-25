@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Notifications</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans min-h-screen p-6">
+
+  <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-lg p-10">
+    <h2 class="text-3xl font-bold text-teal-600 mb-8 text-center">Stock Notifications</h2>
+
+    <!-- Expiring Soon Section -->
+    <div class="mb-10">
+      <h3 class="text-2xl font-semibold text-yellow-600 mb-6 flex items-center">
+        <span class="mr-3 text-3xl">📅</span>Medicines Expiring Within 30 Days
+      </h3>
+      <ul class="space-y-4">
+        {% for med in expiring_soon %}
+          <li class="p-6 bg-yellow-50 border border-yellow-300 rounded-lg hover:shadow-xl transition duration-300">
+            <strong class="text-lg">{{ med.name }}</strong> — Expires on: <span class="text-red-500">{{ med.expiry_date }}</span>
+          </li>
+        {% else %}
+          <li class="text-gray-500 text-lg">No medicines expiring within 30 days.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Out of Stock Section -->
+    <div>
+      <h3 class="text-2xl font-semibold text-red-600 mb-6 flex items-center">
+        <span class="mr-3 text-3xl">⚠️</span>Out of Stock Medicines
+      </h3>
+      <ul class="space-y-4">
+        {% for med in out_of_stock %}
+          <li class="p-6 bg-red-50 border border-red-300 rounded-lg hover:shadow-xl transition duration-300">
+            <strong class="text-lg">{{ med.name }}</strong> — Stock: <span class="text-red-500">0</span>
+          </li>
+        {% else %}
+          <li class="text-gray-500 text-lg">No medicines are currently out of stock.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="text-center mt-8">
+      <a href="{{ url_for('home') }}" class="text-teal-500 hover:underline text-lg">← Back to Home</a>
+    </div>
+  </div>
+
+</body>
+</html>

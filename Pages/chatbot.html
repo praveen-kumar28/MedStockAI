@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MedStockAI Chatbot</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-6xl h-screen bg-white shadow-xl rounded-xl flex flex-col p-6">
+
+    <!-- Header -->
+    <div class="text-3xl font-bold text-teal-600 text-center mb-4">
+      MedStockAI Chat Assistant
+    </div>
+
+    <!-- Chat Area -->
+    <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 border rounded-lg whitespace-pre-line">
+      <!-- Chat messages will be injected here -->
+    </div>
+
+    <!-- Input Section -->
+    <form id="chat-form" class="flex items-center space-x-4 mt-4">
+      <input id="user-input" type="text" placeholder="Ask me something..." required
+        class="flex-grow px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400" />
+      <button type="submit"
+        class="bg-teal-500 text-white px-6 py-2 rounded-lg hover:bg-teal-600 transition">Send</button>
+    </form>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap gap-4 justify-center mt-6">
+      <button id="check-stocks"
+        class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">📦 Check All Stocks</button>
+      <button id="daily-expiry-report"
+        class="bg-yellow-500 text-white px-5 py-2 rounded-lg hover:bg-yellow-600 transition">📧 Send Daily Expiry Report</button>
+      <a href="{{ url_for('home') }}"
+        class="bg-pink-500 text-white px-5 py-2 rounded-lg hover:bg-gray-400 transition">← Back to Home</a>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    const chatBox = document.getElementById('chat-box');
+    const userInput = document.getElementById('user-input');
+    const chatForm = document.getElementById('chat-form');
+
+    function appendMessage(who, message) {
+  const wrapper = document.createElement('div');
+  wrapper.classList.add('flex', who === 'user-message' ? 'justify-end' : 'justify-start');
+
+  const div = document.createElement('div');
+  div.classList.add('chat-message');
+
+  if (who === 'user-message') {
+    div.classList.add(
+      'bg-blue-500', 'text-white', 'rounded-lg', 'px-4', 'py-2', 'mb-2', 'max-w-[70%]'
+    );
+  } else if (who === 'bot-message') {
+    div.classList.add(
+      'bg-emerald-200', 'text-black', 'rounded-lg', 'px-4', 'py-2', 'mb-2', 'max-w-[70%]'
+    );
+  }
+
+  div.innerText = message;
+  wrapper.appendChild(div);
+  chatBox.appendChild(wrapper);
+  chatBox.scrollTop = chatBox.scrollHeight; // Scroll to bottom
+}
+
+
+    chatForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const userMessage = userInput.value.trim();
+
+      if (userMessage) {
+        appendMessage('user-message', userMessage);
+
+      fetch("/get_response", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: `user_input=${encodeURIComponent(userMessage)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+          const botMessage = data.response;
+          appendMessage('bot-message', botMessage);
+
+          if (["Thank you for using Medical Stock Management. Have a great day!"].includes(botMessage)) {
+            appendMessage('bot-message', "Session ended. Refresh the page to start again.");
+          }
+        })
+        .catch(error => {
+          appendMessage('bot-message', "Sorry, there was an error processing your request.");
+          console.error('Error:', error);
+        });
+
+        userInput.value = '';
+      }
+    });
+
+  document.getElementById('check-stocks').addEventListener('click', function () {
+      fetch('/check_stocks')
+        .then(response => response.json())
+        .then(data => {
+          const stockSummary = data.stock_summary.map(
+            item => `${item.name}: ${item.stock} (${item.availability}, Manufacture: ${item.manufacture_date}, Expiry: ${item.expiry_date})`
+          ).join('\n');
+          appendMessage('bot-message', `Stock Summary:\n${stockSummary}`);
+        })
+        .catch(error => {
+          appendMessage('bot-message', "Error fetching the stock summary.");
+          console.error('Error:', error);
+        });
+    });
+
+    document.getElementById('daily-expiry-report').addEventListener('click', function () {
+      fetch('/send_daily_expiry_report')
+        .then(response => response.json())
+        .then(() => {
+          appendMessage('bot-message', "Daily expiry report sent successfully.");
+        })
+        .catch(error => {
+          appendMessage('bot-message', "Error sending the daily expiry report.");
+          console.error('Error:', error);
+        });
+    });
+  </script>
+</body>
+</html>

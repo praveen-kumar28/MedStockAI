@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stock Prediction - Medical Stock Management</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-[#E0F7FA] to-[#6EC6CA] min-h-screen flex items-center justify-center p-6 font-sans">
+
+  <div class="w-full max-w-md bg-white bg-opacity-90 rounded-xl shadow-2xl p-8">
+    <h2 class="text-3xl font-semibold text-[#045D75] mb-4 text-center">Stock Prediction</h2>
+    <p class="text-gray-600 text-sm mb-6 text-center">Enter the medicine name and the month-year to predict future demand quantity.</p>
+
+    <!-- Form -->
+    <form id="stock-form" method="POST" class="space-y-6">
+      <div class="flex flex-col">
+        <label for="medicine-name" class="block text-sm font-medium text-gray-700">Medicine Name</label>
+        <input type="text" id="medicine-name" name="medicine-name" required
+               class="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6EC6CA]"
+               placeholder="e.g. Paracetamol" />
+      </div>
+
+      <div class="flex flex-col">
+        <label for="month-year" class="block text-sm font-medium text-gray-700">Month-Year (YYYY-MM)</label>
+        <input type="text" id="month-year" name="month-year" required
+               class="mt-2 w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6EC6CA]"
+               placeholder="e.g. 2025-06" />
+      </div>
+
+      <button type="submit" class="w-full bg-[#6EC6CA] text-white py-3 rounded-lg hover:bg-[#4BA5AA] transition duration-300">
+        Predict Quantity
+      </button>
+    </form>
+
+    <!-- Result Section -->
+    <div id="result" class="mt-6 hidden">
+      <h3 class="text-lg font-semibold text-center text-gray-800">Prediction Result:</h3>
+      <div id="prediction-result" class="p-4 border rounded-lg mt-2 text-center font-medium">
+        <!-- Prediction Result will show here -->
+      </div>
+    </div>
+
+    <div class="text-center mt-6">
+      <a href="{{ url_for('home') }}" class="text-[#033B4A] hover:underline text-lg font-medium">← Back to Home</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('stock-form').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const medicineName = document.getElementById('medicine-name').value.trim();
+        const monthYear = document.getElementById('month-year').value.trim();
+        const resultDiv = document.getElementById('result');
+        const predictionResult = document.getElementById('prediction-result');
+
+        // Check if the month-year format is valid (YYYY-MM)
+        const monthYearPattern = /^\d{4}-\d{2}$/;
+        if (!monthYear.match(monthYearPattern)) {
+            predictionResult.innerHTML = "Error: Please enter a valid month-year format (YYYY-MM).";
+            predictionResult.className = "p-4 bg-red-100 text-red-800 border border-red-300 rounded-lg mt-2 text-center";
+            resultDiv.classList.remove('hidden');
+            return;
+        }
+
+        fetch('/predict_stock', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ 'medicine_name': medicineName, 'month': monthYear })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.final_prediction !== undefined) {
+                const qty = data.final_prediction;
+                let bgClass = "";
+                let textClass = "";
+
+                if (qty >= 15) {
+                    bgClass = "bg-green-50";
+                    textClass = "text-green-800";
+                } else if (qty >= 5) {
+                    bgClass = "bg-yellow-50";
+                    textClass = "text-yellow-800";
+                } else {
+                    bgClass = "bg-red-50";
+                    textClass = "text-red-800";
+                }
+
+                predictionResult.innerHTML = `Predicted quantity for <strong>${medicineName}</strong> in <strong>${monthYear}</strong>: <strong>${qty}</strong> units`;
+                predictionResult.className = `p-6 border rounded-lg mt-2 text-center font-medium ${bgClass} ${textClass}`;
+                resultDiv.classList.remove('hidden');
+            } else {
+                predictionResult.innerHTML = `Error: ${data.error || "Could not retrieve prediction."}`;
+                predictionResult.className = "p-4 bg-red-100 text-red-800 border border-red-300 rounded-lg mt-2 text-center";
+                resultDiv.classList.remove('hidden');
+            }
+        })
+        .catch(err => {
+            predictionResult.innerHTML = `Error: Server not responding.`;
+            predictionResult.className = "p-4 bg-red-100 text-red-800 border border-red-300 rounded-lg mt-2 text-center";
+            resultDiv.classList.remove('hidden');
+        });
+    });
+    </script>
+
+</body>
+</html>
